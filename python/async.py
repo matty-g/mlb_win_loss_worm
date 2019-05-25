@@ -77,7 +77,7 @@ async def get_win_loss_data_for_team(team, data):
     return None
 
 
-def build_plot_arrays(data):
+def build_wl_plot_arrays(data):
 
     wins = []
     losses = []
@@ -98,12 +98,58 @@ def build_plot_arrays(data):
     fig = plt.figure()
     ax = plt.axes()
 
-    plt.style.use('seaborn-whitegrid')
+    plt.style.use('seaborn-darkgrid')
+    plt.grid(True)
 
     x = dates
+    # plt.ylim(top=max(curr_wins, curr_losses), bottom=0)
 
     ax.plot(x, wins)
     ax.plot(x, losses)
+
+    plt.show()
+
+def build_worm_plot_arrays(data):
+
+    wins = []
+    losses = []
+    dates = []
+    avgs = []
+
+    curr_wins = 0
+    curr_losses = 0
+
+    for each in data:
+        if each[1] is not None:
+            curr_wins = int(each[1][0])
+            curr_losses = int(each[1][1])
+
+        wins.append(curr_wins)
+        losses.append(curr_losses)
+        games_played = curr_wins + curr_losses
+        dates.append(each[0])
+        if curr_wins != 0:
+            avg = curr_wins / float(games_played)
+        else:
+            avg = 0
+        avgs.append(avg)
+
+
+    fig = plt.figure()
+    ax = plt.axes()
+
+    plt.style.use('seaborn-darkgrid')
+    plt.grid(True)
+
+    # plt.ylim(top=0.75, bottom=0)
+
+    x = dates
+
+    plt.axhline(y=0.5, color="red")
+
+    ax.plot(x, avgs)
+    # ax.plot(x, losses)
+
 
     plt.show()
 
@@ -115,46 +161,25 @@ async def get_result(team, date):
     return (date.strftime("%d-%m"), result)
 
 
-
-async def run(team, start_date, end_date):
+def run(team, start_date, end_date):
 
     dates = create_date_range(start_date, end_date)
 
-    # loop = asyncio.get_event_loop()
-    futures = [get_result(team, date) for date in dates]
+    loop = asyncio.get_event_loop()
+    results = loop.run_until_complete(
+        asyncio.gather(
+            *(get_result("cin", date) for date in dates)
+        )
+    )
+    loop.close()
 
-    results = await asyncio.gather(*futures)
-    # loop.close()
+    build_worm_plot_arrays(results)
+    build_wl_plot_arrays(results)
 
-
-    #
-    # for date in dates:
-    #     # print(f"checking on date: {date}")
-    #     results.append(get_result(team, date))
-
-    # build_plot_arrays(results)
-
-    print(results)
 
 import time
 start = time.time()
-
-dates = create_date_range("20/05/2019", "25/05/2019")
-
-loop = asyncio.get_event_loop()
-results = loop.run_until_complete(
-    asyncio.gather(
-        *(get_result("cin", date) for date in dates)
-    )
-)
-loop.close()
-
-print(results)
-
-
-
-# asyncio.run(run("cin", "20/05/2019", "25/05/2019"))
-# run("cin", "20/05/2019", "25/05/2019")
+run("cin", "27/03/2019", "25/05/2019")
 end = time.time()-start
 
 print(f"time: {end:.2f}s")

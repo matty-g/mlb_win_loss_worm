@@ -1,6 +1,7 @@
 import urllib.request
 import json
 import asyncio
+import aiohttp
 
 import matplotlib.pyplot as plt
 
@@ -37,10 +38,14 @@ def create_date_range(start_date, end_date):
 async def get_json_for_date(a_date):
 
     print(f"getting data for: {a_date}")
+
     url = build_date_url(a_date)
 
-    f = urllib.request.urlopen(url)
-    data_file = json.loads(f.read())
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            data_file = await resp.json()
+
+    # data_file = json.loads(f.read())
 
     return data_file
 
@@ -133,7 +138,22 @@ async def run(team, start_date, end_date):
 
 import time
 start = time.time()
-asyncio.run(run("cin", "20/05/2019", "25/05/2019"))
+
+dates = create_date_range("20/05/2019", "25/05/2019")
+
+loop = asyncio.get_event_loop()
+results = loop.run_until_complete(
+    asyncio.gather(
+        *(get_result("cin", date) for date in dates)
+    )
+)
+loop.close()
+
+print(results)
+
+
+
+# asyncio.run(run("cin", "20/05/2019", "25/05/2019"))
 # run("cin", "20/05/2019", "25/05/2019")
 end = time.time()-start
 

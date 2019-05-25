@@ -1,23 +1,21 @@
-import urllib.request
-import json
 import asyncio
 import aiohttp
-
 import matplotlib.pyplot as plt
+import logging
 
 from datetime import datetime, timedelta
 
-
-mlb_url = "http://gd2.mlb.com/components/game/mlb/year_2019/month_05/day_16/miniscoreboard.json"
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 base_url = "http://gd2.mlb.com/components/game/mlb"
+
 
 def build_date_url(date_obj):
 
     year_str = date_obj.year
     month_str = "{:02}".format(date_obj.month)
     day_str = "{:02}".format(date_obj.day)
-
     url = f"{base_url}/year_{year_str}/month_{month_str}/day_{day_str}/miniscoreboard.json"
 
     return url
@@ -29,7 +27,6 @@ def create_date_range(start_date, end_date):
     start = datetime.strptime(start_date, '%d/%m/%Y')
     end = datetime.strptime(end_date, '%d/%m/%Y')
     delta = end - start
-
     date_list = [start + timedelta(days=x) for x in range(0, delta.days)]
 
     return date_list
@@ -37,15 +34,13 @@ def create_date_range(start_date, end_date):
 
 async def get_json_for_date(a_date):
 
-    print(f"getting data for: {a_date}")
+    logger.debug(f"getting data for: {a_date}")
 
     url = build_date_url(a_date)
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
             data_file = await resp.json()
-
-    # data_file = json.loads(f.read())
 
     return data_file
 
@@ -55,29 +50,31 @@ async def get_win_loss_data_for_team(team, data):
     parses JSON to get data for the desired team
     """
 
-    games = data["data"]["games"]["game"]
+    try:
+        games = data["data"]["games"]["game"]
 
-    # print(f"returning data for date: {game['time_date']}")
+    except KeyError:
+        # likely no games at all this day
+        return None
+
+    logger.debug(f"returning data for date: {game['time_date']}")
 
     for game in games:
 
         if game["home_code"] == team:
-            # print("team is playing at home")
             print(f"returning data for date: {game['time_date']}")
             return (game["home_win"], game["home_loss"])
 
         if game["away_code"] == team:
-            # print("team is playing away")
-            # get the data
             print(f"returning data for date: {game['time_date']}")
             return (game["away_win"], game["away_loss"])
 
-    print(f"returning data for date: {game['time_date']}")
+    logger.debug(f"returning data for date: {game['time_date']}")
 
     return None
 
 
-def build_wl_plot_arrays(data):
+def build_wl_plot(data):
 
     wins = []
     losses = []
@@ -102,14 +99,13 @@ def build_wl_plot_arrays(data):
     plt.grid(True)
 
     x = dates
-    # plt.ylim(top=max(curr_wins, curr_losses), bottom=0)
 
     ax.plot(x, wins)
     ax.plot(x, losses)
 
     plt.show()
 
-def build_worm_plot_arrays(data):
+def build_worm_plot(data):
 
     wins = []
     losses = []
@@ -134,22 +130,17 @@ def build_worm_plot_arrays(data):
             avg = 0
         avgs.append(avg)
 
-
     fig = plt.figure()
     ax = plt.axes()
 
     plt.style.use('seaborn-darkgrid')
     plt.grid(True)
 
-    # plt.ylim(top=0.75, bottom=0)
-
     x = dates
 
     plt.axhline(y=0.5, color="red")
 
     ax.plot(x, avgs)
-    # ax.plot(x, losses)
-
 
     plt.show()
 
@@ -168,15 +159,16 @@ def run(team, start_date, end_date):
     loop = asyncio.get_event_loop()
     results = loop.run_until_complete(
         asyncio.gather(
-            *(get_result("cin", date) for date in dates)
+            *(get_result(team, date) for date in dates)
         )
     )
     loop.close()
 
-    build_worm_plot_arrays(results)
-    build_wl_plot_arrays(results)
+    build_worm_plot(results)
+    build_wl_plot(results)
 
 
+# for testing
 import time
 start = time.time()
 run("cin", "27/03/2019", "25/05/2019")

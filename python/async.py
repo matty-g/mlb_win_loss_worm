@@ -2,11 +2,13 @@ import asyncio
 import aiohttp
 import matplotlib.pyplot as plt
 import logging
+import json
 
 from datetime import datetime, timedelta
 
+logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 base_url = "http://gd2.mlb.com/components/game/mlb"
 
@@ -34,14 +36,15 @@ def create_date_range(start_date, end_date):
 
 async def get_json_for_date(a_date):
 
-    logger.debug(f"getting data for: {a_date}")
+    # logger.debug(f"getting data for: {a_date}")
 
     url = build_date_url(a_date)
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
-            data_file = await resp.json()
-
+            # data_file = await resp.json(content_type=None)
+            # data_tmp = await resp.text(encoding='utf-8')
+            data_file = await resp.json(encoding='utf-8', content_type=None)
     return data_file
 
 
@@ -57,19 +60,49 @@ async def get_win_loss_data_for_team(team, data):
         # likely no games at all this day
         return None
 
-    logger.debug(f"returning data for date: {game['time_date']}")
+    # logger.debug(f"no. of games: {len(games)}")
+    # if len(games) > 20:
+    # logger.debug(f"{type(games)} : {games}")
+
+    if not isinstance(games, list):
+        # catch weird edge cases where returned data is corrupt and not in a list
+        games = [games]
 
     for game in games:
+        # logger.debug(game)
 
-        if game["home_code"] == team:
-            print(f"returning data for date: {game['time_date']}")
-            return (game["home_win"], game["home_loss"])
+        # logger.debug(f"type: {type(game)}")
 
-        if game["away_code"] == team:
-            print(f"returning data for date: {game['time_date']}")
-            return (game["away_win"], game["away_loss"])
+        # if isinstance(game, str):
+        #     logger.debug(game)
+        #     logger.debug(f"converting string to dict")
+        #     game_tmp = json.dumps(game)
+        #     game = game_tmp
+        #
+        #
+        #
+        #     logger.debug(f"game is now: {type(game)}")
 
-    logger.debug(f"returning data for date: {game['time_date']}")
+        try:
+            # logger.debug(game["home_code"])
+
+            # logger.debug(f"keys: {len(game.keys())}")
+
+            # logger.debug(f"type: {type(game)}")
+
+            if game["home_code"] == team:
+                # logger.debug(f"returning data for date: {game['time_date']}")
+                return (game["home_win"], game["home_loss"])
+
+            if game["away_code"] == team:
+                # logger.debug(f"returning data for date: {game['time_date']}")
+                return (game["away_win"], game["away_loss"])
+
+        except TypeError as e:
+            logger.debug(f"error parsing for date: {game['time_date']}")
+            logger.debug(f"error code: {e}")
+
+    # logger.debug(f"returning data for date: {game['time_date']}")
 
     return None
 
@@ -104,6 +137,7 @@ def build_wl_plot(data):
     ax.plot(x, losses)
 
     plt.show()
+
 
 def build_worm_plot(data):
 
@@ -145,6 +179,47 @@ def build_worm_plot(data):
     plt.show()
 
 
+def build_over_under_plot(data):
+
+    wins = []
+    losses = []
+    dates = []
+    over_under = []
+
+    curr_wins = 0
+    curr_losses = 0
+
+    for each in data:
+        if each[1] is not None:
+            curr_wins = int(each[1][0])
+            curr_losses = int(each[1][1])
+
+        wins.append(curr_wins)
+        losses.append(curr_losses)
+        ovr_und = (curr_wins - curr_losses)
+        dates.append(each[0])
+        # if curr_wins != 0:
+        #     avg = curr_wins / float(games_played)
+        # else:
+        #     avg = 0
+        over_under.append(ovr_und)
+
+    fig = plt.figure()
+    ax = plt.axes()
+
+    plt.style.use('seaborn-darkgrid')
+    plt.grid(True)
+
+    x = dates
+
+    plt.axhline(y=0, color="red")
+
+    # ax.set_xticks(ax.get_xticks()[::5])
+
+    ax.plot(x, over_under)
+
+    plt.show()
+
 async def get_result(team, date):
     mlb_data = await get_json_for_date(date)
     result = await get_win_loss_data_for_team(team, mlb_data)
@@ -166,12 +241,13 @@ def run(team, start_date, end_date):
 
     build_worm_plot(results)
     build_wl_plot(results)
+    build_over_under_plot(results)
 
 
 # for testing
 import time
 start = time.time()
-run("cin", "27/03/2019", "25/05/2019")
+run("cin", "01/03/2017", "30/10/2017")
 end = time.time()-start
 
 print(f"time: {end:.2f}s")

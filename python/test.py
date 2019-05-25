@@ -1,11 +1,11 @@
 import urllib.request
 import json
+import asyncio
 
 import matplotlib.pyplot as plt
 
-
-
 from datetime import datetime, timedelta
+
 
 mlb_url = "http://gd2.mlb.com/components/game/mlb/year_2019/month_05/day_16/miniscoreboard.json"
 
@@ -94,6 +94,13 @@ def build_plot_arrays(data):
     plt.show()
 
 
+def get_result(team, date):
+    mlb_data = get_json_for_date(date)
+    result = get_win_loss_data_for_team(team, mlb_data)
+
+    return (date.strftime("%d-%m"), result)
+
+
 def run(team, start_date, end_date):
 
     dates = create_date_range(start_date, end_date)
@@ -102,18 +109,14 @@ def run(team, start_date, end_date):
 
     for date in dates:
         # print(f"checking on date: {date}")
-        mlb_data = get_json_for_date(date)
-        result = get_win_loss_data_for_team(team, mlb_data)
-        results.append((date.strftime("%d-%m"), result))
-
-    # print(results)
+        results.append(get_result(team, date))
 
     build_plot_arrays(results)
 
 
 
 
-run("cin", "01/05/2019", "25/05/2019")
+run("cin", "20/05/2019", "25/05/2019")
 
 
 

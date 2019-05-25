@@ -52,15 +52,19 @@ async def get_win_loss_data_for_team(team, data):
 
     games = data["data"]["games"]["game"]
 
+    # print(f"returning data for date: {game['time_date']}")
+
     for game in games:
 
         if game["home_code"] == team:
             # print("team is playing at home")
+            print(f"returning data for date: {game['time_date']}")
             return (game["home_win"], game["home_loss"])
 
         if game["away_code"] == team:
             # print("team is playing away")
             # get the data
+            print(f"returning data for date: {game['time_date']}")
             return (game["away_win"], game["away_loss"])
 
     print(f"returning data for date: {game['time_date']}")
@@ -89,6 +93,8 @@ def build_plot_arrays(data):
     fig = plt.figure()
     ax = plt.axes()
 
+    plt.style.use('seaborn-whitegrid')
+
     x = dates
 
     ax.plot(x, wins)
@@ -104,22 +110,31 @@ async def get_result(team, date):
     return (date.strftime("%d-%m"), result)
 
 
+
 async def run(team, start_date, end_date):
 
     dates = create_date_range(start_date, end_date)
 
-    results = await asyncio.gather(*(get_result(team, date) for date in dates))
+    # loop = asyncio.get_event_loop()
+    futures = [get_result(team, date) for date in dates]
+
+    results = await asyncio.gather(*futures)
+    # loop.close()
+
+
     #
     # for date in dates:
     #     # print(f"checking on date: {date}")
     #     results.append(get_result(team, date))
 
-    build_plot_arrays(results)
+    # build_plot_arrays(results)
 
+    print(results)
 
 import time
 start = time.time()
 asyncio.run(run("cin", "20/05/2019", "25/05/2019"))
+# run("cin", "20/05/2019", "25/05/2019")
 end = time.time()-start
 
 print(f"time: {end:.2f}s")

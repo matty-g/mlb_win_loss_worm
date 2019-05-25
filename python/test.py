@@ -34,8 +34,9 @@ def create_date_range(start_date, end_date):
     return date_list
 
 
-def get_json_for_date(a_date):
+async def get_json_for_date(a_date):
 
+    print(f"getting data for: {a_date}")
     url = build_date_url(a_date)
 
     f = urllib.request.urlopen(url)
@@ -44,7 +45,7 @@ def get_json_for_date(a_date):
     return data_file
 
 
-def get_win_loss_data_for_team(team, data):
+async def get_win_loss_data_for_team(team, data):
     """
     parses JSON to get data for the desired team
     """
@@ -61,6 +62,8 @@ def get_win_loss_data_for_team(team, data):
             # print("team is playing away")
             # get the data
             return (game["away_win"], game["away_loss"])
+
+    print(f"returning data for date: {game['time_date']}")
 
     return None
 
@@ -94,29 +97,31 @@ def build_plot_arrays(data):
     plt.show()
 
 
-def get_result(team, date):
-    mlb_data = get_json_for_date(date)
-    result = get_win_loss_data_for_team(team, mlb_data)
+async def get_result(team, date):
+    mlb_data = await get_json_for_date(date)
+    result = await get_win_loss_data_for_team(team, mlb_data)
 
     return (date.strftime("%d-%m"), result)
 
 
-def run(team, start_date, end_date):
+async def run(team, start_date, end_date):
 
     dates = create_date_range(start_date, end_date)
 
-    results = []
-
-    for date in dates:
-        # print(f"checking on date: {date}")
-        results.append(get_result(team, date))
+    results = await asyncio.gather(*(get_result(team, date) for date in dates))
+    #
+    # for date in dates:
+    #     # print(f"checking on date: {date}")
+    #     results.append(get_result(team, date))
 
     build_plot_arrays(results)
 
 
+import time
+start = time.time()
+asyncio.run(run("cin", "20/05/2019", "25/05/2019"))
+end = time.time()-start
 
-
-run("cin", "20/05/2019", "25/05/2019")
-
+print(f"time: {end:.2f}s")
 
 

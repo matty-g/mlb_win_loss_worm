@@ -6,7 +6,7 @@ from utils import create_date_range
 from config import base_url
 
 logger = logging.getLogger(__name__)
-
+logger.setLevel(logging.DEBUG)
 
 def build_date_url(date_obj):
 
@@ -19,7 +19,7 @@ def build_date_url(date_obj):
 
 
 async def get_json_for_date(a_date):
-
+    logger.debug(f"getting json for {a_date}")
     url = build_date_url(a_date)
 
     async with aiohttp.ClientSession() as session:
@@ -63,7 +63,30 @@ async def get_win_loss_data_for_team(team, data):
 
 
 async def get_result(team, date):
+    logger.debug(f"get_result called for {team} on {date}")
     mlb_data = await get_json_for_date(date)
     result = await get_win_loss_data_for_team(team, mlb_data)
 
     return (date.strftime("%d-%m"), result)
+
+
+def query(team, start_date, end_date):
+    logger.debug("query called")
+    dates = create_date_range(start_date, end_date)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    results = loop.run_until_complete(
+        asyncio.gather(
+            *(get_result(team, date) for date in dates)
+        )
+    )
+    loop.close()
+
+    return results
+
+def test_api(team):
+    logger.debug('test api called from mlb data')
+
+    return f"you selected {team}"
+

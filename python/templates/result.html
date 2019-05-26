@@ -3,15 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <title>Result Page</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0/dist/Chart.min.js"></script>
 </head>
 <body>
-
-    <div class="result_display">
-        {% for d in data %}
-        <!--{{ d[0] }} : {{ d[1] }}-->
-        {{ d }}
-        {% endfor %}
+    <div id="container" width="1200" height="400"><span> {{ team }}</span>
+        <canvas id="myChart" width="1200" height="400"></canvas>
     </div>
+    <script>
+
+        var labels = {{ chart_labels|safe }}
+        var wins = {{ wins|safe }}
+        var losses = {{ losses|safe }}
+        var ctx = document.getElementById('myChart').getContext('2d');
+
+        var data = {
+            labels: labels,
+            datasets: [{
+                label: "Wins",
+                  fill: false,
+                  lineTension: 0.1,
+                  backgroundColor: "rgba(225,0,0,0.4)",
+                  borderColor: "red", // The main line color
+                  borderCapStyle: 'square',
+                  borderDash: [], // try [5, 15] for instance
+                  borderDashOffset: 0.0,
+                  borderJoinStyle: 'miter',
+                  pointBorderColor: "black",
+                  pointBackgroundColor: "white",
+                  pointBorderWidth: 1,
+                  pointHoverRadius: 8,
+                  pointHoverBackgroundColor: "yellow",
+                  pointHoverBorderColor: "brown",
+                  pointHoverBorderWidth: 2,
+                  pointRadius: 4,
+                  pointHitRadius: 2,
+                  data: wins,
+                  spanGaps: true,
+            },{
+                label: "Losses",
+                  fill: false,
+                  lineTension: 0.1,
+                  backgroundColor: "rgba(167,105,0,0.4)",
+                  borderColor: "rgb(167, 105, 0)",
+                  borderCapStyle: 'butt',
+                  borderDash: [],
+                  borderDashOffset: 0.0,
+                  borderJoinStyle: 'miter',
+                  pointBorderColor: "white",
+                  pointBackgroundColor: "black",
+                  pointBorderWidth: 1,
+                  pointHoverRadius: 8,
+                  pointHoverBackgroundColor: "brown",
+                  pointHoverBorderColor: "yellow",
+                  pointHoverBorderWidth: 2,
+                  pointRadius: 4,
+                  pointHitRadius: 2,
+                  data: losses,
+                  spanGaps: true,
+            }
+            ]
+        };
+
+        var options = {
+            responsive: false,
+            maintainAspectRatio: true
+        };
+
+            // Chart declaration:
+    var myBarChart = new Chart(ctx, {
+      type: 'line',
+      data: data,
+      options: options
+    });
+
+    </script>
 
 </body>
 </html>

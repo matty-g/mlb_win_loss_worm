@@ -1,17 +1,14 @@
 import asyncio
 import logging
-
-from plots import build_over_under_plot, build_wl_plot, build_worm_plot
-from utils import create_date_range
-from mlb_data import get_result
-
+import mlb_data
 
 from flask import Flask, flash, redirect, render_template, request, url_for
-import mlb_data
+
+from config import teams
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 app = Flask(__name__)
 
@@ -21,11 +18,7 @@ def index():
     logger.debug("index called")
     return render_template(
         'test.html',
-        data=[{'name':'Cincinnati',
-               'id': 'cin'},
-              {'name':'St. Louis',
-               'id': 'sln'}
-              ]
+        data=teams
     )
 
 
@@ -33,29 +26,34 @@ def index():
 def result():
     logger.debug("result called")
     data = []
+    wins = []
+    losses = []
+    chart_labels = []
+    team = None
     error = None
     select = request.form.get('comp_select')
     logger.debug(f"select is: {select}")
-    resp = mlb_data.query(select, "28/03/2019", "25/05/2019")
+    resp = mlb_data.query(select, "27/03/2019", "26/05/2019")
     # resp = mlb_data.test_api(select)
     logger.debug(f"resp is: {resp}")
     if resp:
-        data.append(resp)
+        chart_labels = mlb_data.extract_labels(resp)
+        wins = mlb_data.extract_wins(resp)
+        losses = mlb_data.extract_losses(resp)
+        team = mlb_data.get_team(select)
+        # data.append(resp)
 
     # do stuff
 
     return render_template(
         'result.html',
+        team = team,
         data = data,
-        error = error
+        error = error,
+        chart_labels = chart_labels,
+        wins = wins,
+        losses = losses
     )
-
-
-# def test_api(team):
-#     logger.debug('test api called')
-#
-#     return f"selected {team}"
-#
 
 
 if __name__ == '__main__':

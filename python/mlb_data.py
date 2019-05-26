@@ -3,10 +3,10 @@ import asyncio
 import logging
 
 from utils import create_date_range
-from config import base_url
+from config import base_url, teams
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 def build_date_url(date_obj):
 
@@ -55,7 +55,7 @@ async def get_win_loss_data_for_team(team, data):
                 logger.debug(f"returning data for date: {game['time_date']}")
                 return (game["away_win"], game["away_loss"])
 
-        except TypeError as e:
+        except TypeError or KeyError as e:
             logger.debug(f"error parsing for date: {game['time_date']}")
             logger.debug(f"error code: {e}")
 
@@ -85,8 +85,57 @@ def query(team, start_date, end_date):
 
     return results
 
+
 def test_api(team):
     logger.debug('test api called from mlb data')
 
     return f"you selected {team}"
 
+
+def extract_labels(data):
+
+    labels = []
+    for each in data:
+        labels.append(each[0])
+
+    logger.debug(f"labels: {labels}")
+    return labels
+
+
+def extract_wins(data):
+    wins = []
+
+    # logger.debug(f"data: {data}")
+
+    curr_wins = 0
+
+    for each in data:
+        if each[1] is not None:
+            curr_wins = each[1][0]
+
+        wins.append(curr_wins)
+
+    logger.debug(f"wins: {wins}")
+    return wins
+
+
+def extract_losses(data):
+    losses = []
+
+    curr_losses = 0
+
+    for each in data:
+        if each[1] is not None:
+            curr_losses = each[1][1]
+
+        losses.append(curr_losses)
+
+    logger.debug(f"losses: {losses}")
+    return losses
+
+
+def get_team(team):
+    # perform team lookup
+    for obj in teams:
+        if obj['id'] == team:
+            return obj['name']

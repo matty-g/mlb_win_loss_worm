@@ -15,7 +15,8 @@ def run(team, start_date, end_date):
 
     dates = create_date_range(start_date, end_date)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     results = loop.run_until_complete(
         asyncio.gather(
             *(get_result(team, date) for date in dates)
@@ -23,8 +24,8 @@ def run(team, start_date, end_date):
     )
     loop.close()
 
-    # build_worm_plot(results)
-    build_wl_plot(results)
+    build_worm_plot(results)
+    # build_wl_plot(results)
     # build_over_under_plot(results)
 
 
@@ -32,6 +33,7 @@ def run(team, start_date, end_date):
 import time
 start = time.time()
 run("cin", "27/03/2019", "24/05/2019")
+run("cin", "27/03/2018", "24/05/2018")
 end = time.time()-start
 
 print(f"time: {end:.2f}s")
